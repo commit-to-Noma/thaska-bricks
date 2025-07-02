@@ -3,12 +3,14 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Welcome() {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // gives you navigate()
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>Welcome to Thaska Bricks</h1>
-      <p style={styles.subtitle}>Reliable, simple business tools — made with love</p>
+      {/* Business name and slogan */}
+      <h1 style={styles.title}>Thaska Bricks</h1>
+      <p style={styles.subtitle}>Your Dreams Made Concrete 🧱</p>
+      {/* Button to enter the dashboard */}
       <button style={styles.button} onClick={() => navigate('/dashboard')}>
         Enter Dashboard 🚀
       </button>
@@ -25,7 +27,7 @@ const styles = {
     fontFamily: 'Arial, sans-serif',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     marginBottom: 10,
     color: '#1e40af',
   },
