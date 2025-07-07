@@ -1,6 +1,7 @@
 // src/PayrollInput.jsx
 import React, { useState, useEffect } from 'react';
 import localforage from 'localforage';
+import PayslipPDFButton from './components/PayslipPDF';
 
 export default function PayrollInput() {
   const [payslips, setPayslips] = useState([]);
@@ -129,9 +130,10 @@ export default function PayrollInput() {
                 <td>${totalB.toFixed(2)}</td>
                 <td>${totalD.toFixed(2)}</td>
                 <td>${net.toFixed(2)}</td>
-                <td>
+                <td style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                   <button onClick={() => handleEdit(p)}>✏️</button>
                   <button onClick={() => handleDelete(p.id)}>🗑️</button>
+                  <PayslipPDFButton data={{ ...p, totalBenefits: totalB, totalDeductions: totalD, netPay: net }} />
                 </td>
               </tr>
             );
