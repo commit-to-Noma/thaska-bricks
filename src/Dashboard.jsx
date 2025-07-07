@@ -26,6 +26,9 @@ export default function Dashboard() {
         <button style={styles.button} onClick={() => navigate('/capital')}>
           💼 Capital
         </button>
+        <button style={styles.button} onClick={() => navigate('/miscellaneous')}>
+          🧰 Miscellaneous
+        </button>
         <button style={styles.button} onClick={() => alert('Clients page coming soon')}>
           👥 Clients
         </button>

@@ -12,6 +12,7 @@ import IncomeStatement from './IncomeStatement.jsx';
 import SalesInput from './SalesInput.jsx';
 import CostsInput from './CostsInput.jsx';
 import PayrollTab from './PayrollInput.jsx';
+import Miscellaneous from './Miscellaneous.jsx';
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -28,6 +29,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/sales" element={<SalesInput />} />
         <Route path="/costs" element={<CostsInput />} />
         <Route path="/payroll" element={<PayrollTab />} /> {/* 👈 Add this line */}
+        <Route path="/miscellaneous" element={<Miscellaneous />} />
+
 
 
       </Routes>
