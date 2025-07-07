@@ -1,4 +1,4 @@
-// src/MainApp.jsx
+// src/Dashboard.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,27 +11,25 @@ export default function Dashboard() {
       <p style={styles.subtitle}>Your Dreams Made Concrete 🧱</p>
 
       <div style={styles.menu}>
-        {/* Navigate to IncomeStatement page */}
-        <button
-          style={styles.button}
-          className="thaska-btn"
-          onClick={() => navigate('/income-statement')}
-        >
+        <button style={styles.button} onClick={() => navigate('/income-statement')}>
           📈 Income Statement
         </button>
-        {/* Placeholder buttons for future pages */}
-        <button
-          style={styles.button}
-          className="thaska-btn"
-          onClick={() => alert('Clients page coming soon')}
-        >
+        <button style={styles.button} onClick={() => navigate('/sales')}>
+          💰 Sales
+        </button>
+        <button style={styles.button} onClick={() => navigate('/costs')}>
+          🧱 Costs
+        </button>
+        <button style={styles.button} onClick={() => navigate('/payroll')}>
+          📃 Payroll
+        </button>
+        <button style={styles.button} onClick={() => navigate('/capital')}>
+          💼 Capital
+        </button>
+        <button style={styles.button} onClick={() => alert('Clients page coming soon')}>
           👥 Clients
         </button>
-        <button
-          style={styles.button}
-          className="thaska-btn"
-          onClick={() => alert('Invoice page coming soon')}
-        >
+        <button style={styles.button} onClick={() => alert('Invoice page coming soon')}>
           🧾 New Invoice
         </button>
       </div>
@@ -59,9 +57,9 @@ const styles = {
   },
   menu: {
     display: 'flex',
-    justifyContent: 'space-around',
     flexWrap: 'wrap',
-    gap: 12,
+    justifyContent: 'center',
+    gap: 16,
   },
   button: {
     padding: '12px 20px',
@@ -71,6 +69,7 @@ const styles = {
     backgroundColor: '#2563eb',
     color: 'white',
     cursor: 'pointer',
+    minWidth: 180,
     boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
   },
 };

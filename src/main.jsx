@@ -10,6 +10,8 @@ import Welcome from './Welcome.jsx';
 import Dashboard from './Dashboard.jsx';
 import IncomeStatement from './IncomeStatement.jsx';
 import SalesInput from './SalesInput.jsx';
+import CostsInput from './CostsInput.jsx';
+import PayrollTab from './PayrollInput.jsx';
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -24,6 +26,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         {/* “/income-statement” shows the income calculator */}
         <Route path="/income-statement" element={<IncomeStatement />} />
         <Route path="/sales" element={<SalesInput />} />
+        <Route path="/costs" element={<CostsInput />} />
+        <Route path="/payroll" element={<PayrollTab />} /> {/* 👈 Add this line */}
+
 
       </Routes>
     </BrowserRouter>
