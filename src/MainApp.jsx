@@ -14,6 +14,7 @@ import Miscellaneous from './Miscellaneous.jsx';
 import BalanceSheet from './BalanceSheet.jsx';
 import CashFlowStatement from './CashFlowStatement';
 import CapitalInput from './CapitalInput.jsx';
+import Inventory from './Inventory.jsx';
 import TransactionSummary from './TransactionSummary.jsx';
 
 function Sidebar() {
@@ -26,6 +27,7 @@ function Sidebar() {
     { id: 'costs', label: 'Costs', icon: '🧱', path: '/costs' },
     { id: 'capital', label: 'Capital & Equipment', icon: '💼', path: '/capital' },
     { id: 'miscellaneous', label: 'Miscellaneous', icon: '🧰', path: '/miscellaneous' },
+    { id: 'inventory', label: 'Inventory', icon: '📦', path: '/inventory' },
     { id: 'income-statement', label: 'Income Statement', icon: '📈', path: '/income-statement' },
     { id: 'balance-sheet', label: 'Balance Sheet', icon: '⚖️', path: '/balance-sheet' },
     { id: 'cashflow', label: 'Cash Flow', icon: '📊', path: '/cashflow' },
@@ -82,6 +84,7 @@ function MainContent() {
         <Route path="/costs" element={<CostsInput />} />
         <Route path="/capital" element={<CapitalInput />} />
         <Route path="/miscellaneous" element={<Miscellaneous />} />
+        <Route path="/inventory" element={<Inventory />} />
         <Route path="/income-statement" element={<IncomeStatement />} />
         <Route path="/balance-sheet" element={<BalanceSheet />} />
         <Route path="/cashflow" element={<CashFlowStatement />} />

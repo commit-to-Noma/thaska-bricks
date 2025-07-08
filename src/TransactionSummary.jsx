@@ -1,6 +1,12 @@
 // src/TransactionSummary.jsx
 import React, { useState, useEffect } from 'react';
 import localforage from 'localforage';
+import { 
+  checkForDuplicateTransactions, 
+  checkForLargeCosts, 
+  checkForOverdueReceivables,
+  validateDoubleEntry
+} from './utils/helpers.js';
 
 export default function TransactionSummary() {
   const [summary, setSummary] = useState({
@@ -9,9 +15,12 @@ export default function TransactionSummary() {
     payroll: { total: 0, count: 0, unpaid: 0 },
     misc: { total: 0, count: 0, operating: 0, assets: 0 },
     capital: { assets: 0, liabilities: 0, equity: 0 },
+    inventory: { totalValue: 0, lowStock: 0 },
   });
 
   const [insights, setInsights] = useState([]);
+  const [validationAlerts, setValidationAlerts] = useState([]);
+  const [crossReferences, setCrossReferences] = useState([]);
 
   useEffect(() => {
     loadAllData();
@@ -19,12 +28,13 @@ export default function TransactionSummary() {
 
   const loadAllData = async () => {
     try {
-      const [sales, costs, payslips, misc, capital] = await Promise.all([
+      const [sales, costs, payroll, misc, capital, inventory] = await Promise.all([
         localforage.getItem('sales') || [],
         localforage.getItem('costs') || [],
-        localforage.getItem('payslips') || [],
+        localforage.getItem('payroll') || [],
         localforage.getItem('miscellaneous') || [],
         localforage.getItem('capital') || [],
+        localforage.getItem('inventory') || [],
       ]);
 
       // Sales summary
@@ -42,15 +52,11 @@ export default function TransactionSummary() {
         cogs: costs.filter(c => c.usedInProduction === 'yes').reduce((sum, c) => sum + c.amount, 0),
       };
 
-      // Payroll summary
+      // Payroll summary (updated for new structure)
       const payrollSummary = {
-        total: payslips.reduce((sum, p) => {
-          const totalBenefits = (p.benefits || []).reduce((s, b) => s + Number(b.amount || 0), 0);
-          const totalDeductions = (p.deductions || []).reduce((s, d) => s + Number(d.amount || 0), 0);
-          return sum + Number(p.basicSalary || 0) + totalBenefits - totalDeductions;
-        }, 0),
-        count: payslips.length,
-        unpaid: 0, // Will need to add "paid" field to payroll
+        total: payroll.reduce((sum, p) => sum + (p.netPay || 0), 0),
+        count: payroll.length,
+        unpaid: 0,
       };
 
       // Misc summary
@@ -63,9 +69,15 @@ export default function TransactionSummary() {
 
       // Capital summary
       const capitalSummary = {
-        assets: capital.filter(c => c.category === 'asset').reduce((sum, c) => sum + c.amount, 0),
-        liabilities: capital.filter(c => c.category === 'liability').reduce((sum, c) => sum + c.amount, 0),
-        equity: capital.filter(c => c.category === 'equity').reduce((sum, c) => sum + c.amount, 0),
+        assets: capital.filter(c => c.category === 'Investment').reduce((sum, c) => sum + c.amount, 0),
+        liabilities: capital.filter(c => c.category === 'Financing').reduce((sum, c) => sum + c.amount, 0),
+        equity: capital.filter(c => c.category === 'Investment').reduce((sum, c) => sum + c.amount, 0),
+      };
+
+      // Inventory summary
+      const inventorySummary = {
+        totalValue: inventory.reduce((sum, i) => sum + (i.currentStock * i.unitCost), 0),
+        lowStock: inventory.filter(i => i.currentStock <= i.reorderLevel).length,
       };
 
       setSummary({
@@ -74,7 +86,52 @@ export default function TransactionSummary() {
         payroll: payrollSummary,
         misc: miscSummary,
         capital: capitalSummary,
+        inventory: inventorySummary,
       });
+
+      // Run validation checks
+      const allTransactions = [...sales, ...costs, ...payroll, ...misc, ...capital];
+      const duplicates = checkForDuplicateTransactions(allTransactions);
+      const largeCosts = checkForLargeCosts(costs);
+      const overdue = checkForOverdueReceivables(sales);
+      const doubleEntryIssues = validateDoubleEntry(allTransactions);
+
+      const alerts = [
+        ...duplicates.map(d => ({ type: 'warning', message: `Duplicate transaction: ${d.description}`, action: 'Review and remove duplicates' })),
+        ...largeCosts.map(c => ({ type: 'info', message: `Large cost: $${c.amount} - ${c.description}`, action: 'Verify amount' })),
+        ...overdue.map(o => ({ type: 'error', message: `Overdue receivable: $${o.amount} - ${o.description}`, action: 'Follow up on payment' })),
+        ...doubleEntryIssues.map(i => ({ type: 'error', message: `Double-entry issue: ${i.message}`, action: 'Review accounting logic' })),
+      ];
+
+      setValidationAlerts(alerts);
+
+      // Generate cross-references
+      const crossRefs = [];
+      
+      // Find inventory items referenced in costs/sales
+      costs.forEach(cost => {
+        const inventoryItem = inventory.find(i => i.name.toLowerCase().includes(cost.description.toLowerCase()));
+        if (inventoryItem) {
+          crossRefs.push({
+            type: 'inventory-cost',
+            message: `Cost "${cost.description}" (${cost.referenceNumber}) linked to inventory item "${inventoryItem.name}"`,
+            references: [cost.referenceNumber, inventoryItem.id]
+          });
+        }
+      });
+
+      sales.forEach(sale => {
+        const inventoryItem = inventory.find(i => i.name.toLowerCase().includes(sale.description.toLowerCase()));
+        if (inventoryItem) {
+          crossRefs.push({
+            type: 'inventory-sale',
+            message: `Sale "${sale.description}" (${sale.referenceNumber}) linked to inventory item "${inventoryItem.name}"`,
+            references: [sale.referenceNumber, inventoryItem.id]
+          });
+        }
+      });
+
+      setCrossReferences(crossRefs);
 
       // Generate insights
       const newInsights = [];
@@ -154,11 +211,43 @@ export default function TransactionSummary() {
         </div>
 
         <div style={styles.card}>
-          <h4>💼 Capital</h4>
+          <h4>� Inventory</h4>
+          <p><strong>${summary.inventory.totalValue.toFixed(2)}</strong></p>
+          <small>{summary.inventory.lowStock > 0 ? `⚠️ ${summary.inventory.lowStock} items low stock` : '✅ All items in stock'}</small>
+        </div>
+
+        <div style={styles.card}>
+          <h4>�💼 Capital</h4>
           <p><strong>Equity: ${(summary.capital.assets - summary.capital.liabilities).toFixed(2)}</strong></p>
           <small>Assets: ${summary.capital.assets.toFixed(2)} | Debt: ${summary.capital.liabilities.toFixed(2)}</small>
         </div>
       </div>
+
+      {/* Validation Alerts */}
+      {validationAlerts.length > 0 && (
+        <div style={styles.alertsSection}>
+          <h4>⚠️ Validation Alerts</h4>
+          {validationAlerts.map((alert, index) => (
+            <div key={index} style={{...styles.alert, ...styles[alert.type]}}>
+              <span>{alert.message}</span>
+              <small style={styles.action}>{alert.action}</small>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Cross-References */}
+      {crossReferences.length > 0 && (
+        <div style={styles.crossRefSection}>
+          <h4>🔗 Cross-References</h4>
+          {crossReferences.map((ref, index) => (
+            <div key={index} style={styles.crossRef}>
+              <span>{ref.message}</span>
+              <small>References: {ref.references.join(', ')}</small>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Insights */}
       <div style={styles.insights}>
@@ -210,6 +299,30 @@ const styles = {
   },
   insights: {
     marginBottom: '20px',
+  },
+  alertsSection: {
+    marginBottom: '20px',
+  },
+  alert: {
+    padding: '10px',
+    borderRadius: '4px',
+    margin: '5px 0',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  crossRefSection: {
+    marginBottom: '20px',
+  },
+  crossRef: {
+    padding: '10px',
+    borderRadius: '4px',
+    margin: '5px 0',
+    backgroundColor: '#f3f4f6',
+    border: '1px solid #d1d5db',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '5px',
   },
   insight: {
     padding: '10px',
