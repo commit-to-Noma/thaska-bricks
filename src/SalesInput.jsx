@@ -9,6 +9,8 @@ export default function SalesInput() {
     description: '',
     quantity: '',
     unitPrice: '',
+    paid: 'yes', // 'yes' or 'no' for accounts receivable
+    paidVia: 'cash', // 'cash', 'bank', 'credit'
     note: '',
   });
   const [error, setError] = useState('');
@@ -29,8 +31,8 @@ export default function SalesInput() {
   };
 
   const handleSubmit = () => {
-    const { date, description, quantity, unitPrice } = form;
-    if (!date || !description || !quantity || !unitPrice) {
+    const { date, description, quantity, unitPrice, paid, paidVia } = form;
+    if (!date || !description || !quantity || !unitPrice || !paid || !paidVia) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -38,6 +40,9 @@ export default function SalesInput() {
     const newSale = {
       ...form,
       amount: Number(quantity) * Number(unitPrice),
+      quantity: Number(quantity),
+      unitPrice: Number(unitPrice),
+      cashFlowType: 'operating',
     };
     if (form.id !== null) {
       setSales(sales.map((item) => (item.id === form.id ? newSale : item)));
@@ -45,7 +50,7 @@ export default function SalesInput() {
       newSale.id = Date.now();
       setSales([...sales, newSale]);
     }
-    setForm({ id: null, date: '', description: '', quantity: '', unitPrice: '', note: '' });
+    setForm({ id: null, date: '', description: '', quantity: '', unitPrice: '', paid: 'yes', paidVia: 'cash', note: '' });
   };
 
   const handleEdit = (sale) => setForm(sale);
@@ -60,6 +65,15 @@ export default function SalesInput() {
         <input name="description" value={form.description} onChange={handleChange} placeholder="Description" />
         <input name="quantity" type="number" value={form.quantity} onChange={handleChange} placeholder="Quantity" />
         <input name="unitPrice" type="number" value={form.unitPrice} onChange={handleChange} placeholder="Unit Price" />
+        <select name="paid" value={form.paid} onChange={handleChange}>
+          <option value="yes">Paid ✓</option>
+          <option value="no">Unpaid (A/R)</option>
+        </select>
+        <select name="paidVia" value={form.paidVia} onChange={handleChange}>
+          <option value="cash">Cash</option>
+          <option value="bank">Bank</option>
+          <option value="credit">Credit</option>
+        </select>
         <input name="note" value={form.note} onChange={handleChange} placeholder="Note (optional)" />
         <button onClick={handleSubmit}>{form.id ? 'Update' : 'Add'} Sale</button>
       </div>
@@ -71,6 +85,8 @@ export default function SalesInput() {
             <th>Qty</th>
             <th>Unit Price</th>
             <th>Total</th>
+            <th>Paid</th>
+            <th>Via</th>
             <th>Note</th>
             <th>Actions</th>
           </tr>
@@ -83,6 +99,8 @@ export default function SalesInput() {
               <td>{s.quantity}</td>
               <td>${Number(s.unitPrice).toFixed(2)}</td>
               <td>${Number(s.amount).toFixed(2)}</td>
+              <td>{s.paid === 'yes' ? '✓' : '⏳'}</td>
+              <td>{s.paidVia}</td>
               <td>{s.note}</td>
               <td>
                 <button onClick={() => handleEdit(s)}>✏️</button>
@@ -104,7 +122,7 @@ const styles = {
   },
   form: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(6, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
     gap: 10,
     marginBottom: 20,
   },

@@ -13,6 +13,8 @@ import PayrollTab from './PayrollInput.jsx';
 import Miscellaneous from './Miscellaneous.jsx';
 import BalanceSheet from './BalanceSheet.jsx';
 import CashFlowStatement from './CashFlowStatement';
+import CapitalInput from './CapitalInput.jsx';
+import TransactionSummary from './TransactionSummary.jsx';
 
 function Sidebar() {
   const navigate = useNavigate();
@@ -22,10 +24,11 @@ function Sidebar() {
     { id: 'sales', label: 'Sales', icon: '💰', path: '/sales' },
     { id: 'payroll', label: 'Payroll', icon: '📃', path: '/payroll' },
     { id: 'costs', label: 'Costs', icon: '🧱', path: '/costs' },
+    { id: 'capital', label: 'Capital & Equipment', icon: '💼', path: '/capital' },
+    { id: 'miscellaneous', label: 'Miscellaneous', icon: '🧰', path: '/miscellaneous' },
     { id: 'income-statement', label: 'Income Statement', icon: '📈', path: '/income-statement' },
     { id: 'balance-sheet', label: 'Balance Sheet', icon: '⚖️', path: '/balance-sheet' },
     { id: 'cashflow', label: 'Cash Flow', icon: '📊', path: '/cashflow' },
-    { id: 'miscellaneous', label: 'Miscellaneous', icon: '🧰', path: '/miscellaneous' },
   ];
 
   return (
@@ -66,6 +69,7 @@ function MainContent() {
         <h1 style={styles.welcomeTitle}>Welcome to Thaska Bricks</h1>
         <p style={styles.welcomeSubtitle}>Your Dreams Made Concrete 🧱</p>
         <p style={styles.welcomeText}>Select a tab from the sidebar to get started.</p>
+        <TransactionSummary />
       </div>
     );
   }
@@ -76,10 +80,11 @@ function MainContent() {
         <Route path="/sales" element={<SalesInput />} />
         <Route path="/payroll" element={<PayrollTab />} />
         <Route path="/costs" element={<CostsInput />} />
+        <Route path="/capital" element={<CapitalInput />} />
+        <Route path="/miscellaneous" element={<Miscellaneous />} />
         <Route path="/income-statement" element={<IncomeStatement />} />
         <Route path="/balance-sheet" element={<BalanceSheet />} />
         <Route path="/cashflow" element={<CashFlowStatement />} />
-        <Route path="/miscellaneous" element={<Miscellaneous />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/welcome" element={<Welcome />} />
       </Routes>

@@ -9,6 +9,8 @@ export default function CostsInput() {
     category: '',
     description: '',
     amount: '',
+    usedInProduction: 'yes', // 'yes' = COGS, 'no' = Inventory
+    paidVia: 'cash', // 'cash', 'bank', 'credit'
     note: '',
   });
   const [error, setError] = useState('');
@@ -29,8 +31,8 @@ export default function CostsInput() {
   };
 
   const handleSubmit = () => {
-    const { date, category, description, amount } = form;
-    if (!date || !category || !description || !amount) {
+    const { date, category, description, amount, usedInProduction, paidVia } = form;
+    if (!date || !category || !description || !amount || !usedInProduction || !paidVia) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -39,6 +41,7 @@ export default function CostsInput() {
     const newCost = {
       ...form,
       amount: Number(amount),
+      cashFlowType: 'operating',
     };
 
     if (form.id !== null) {
@@ -48,7 +51,7 @@ export default function CostsInput() {
       setCosts([...costs, newCost]);
     }
 
-    setForm({ id: null, date: '', category: '', description: '', amount: '', note: '' });
+    setForm({ id: null, date: '', category: '', description: '', amount: '', usedInProduction: 'yes', paidVia: 'cash', note: '' });
   };
 
   const handleEdit = (item) => setForm(item);
@@ -71,6 +74,15 @@ export default function CostsInput() {
         </select>
         <input name="description" value={form.description} onChange={handleChange} placeholder="Description" />
         <input name="amount" type="number" value={form.amount} onChange={handleChange} placeholder="Amount (USD)" />
+        <select name="usedInProduction" value={form.usedInProduction} onChange={handleChange}>
+          <option value="yes">Used in Production (COGS)</option>
+          <option value="no">Inventory (Not used yet)</option>
+        </select>
+        <select name="paidVia" value={form.paidVia} onChange={handleChange}>
+          <option value="cash">Cash</option>
+          <option value="bank">Bank</option>
+          <option value="credit">Credit</option>
+        </select>
         <input name="note" value={form.note} onChange={handleChange} placeholder="Note (optional)" />
         <button onClick={handleSubmit}>{form.id ? 'Update' : 'Add'} Cost</button>
       </div>
@@ -82,6 +94,8 @@ export default function CostsInput() {
             <th>Category</th>
             <th>Description</th>
             <th>Amount</th>
+            <th>Used in Production</th>
+            <th>Paid Via</th>
             <th>Note</th>
             <th>Actions</th>
           </tr>
@@ -93,6 +107,8 @@ export default function CostsInput() {
               <td>{c.category}</td>
               <td>{c.description}</td>
               <td>${c.amount.toFixed(2)}</td>
+              <td>{c.usedInProduction === 'yes' ? 'COGS' : 'Inventory'}</td>
+              <td>{c.paidVia}</td>
               <td>{c.note}</td>
               <td>
                 <button onClick={() => handleEdit(c)}>✏️</button>
@@ -114,7 +130,7 @@ const styles = {
   },
   form: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(6, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
     gap: 10,
     marginBottom: 20,
   },

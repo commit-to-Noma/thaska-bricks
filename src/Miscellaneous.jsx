@@ -8,8 +8,11 @@ export default function Miscellaneous() {
     id: null,
     date: '',
     category: '',
+    expenseType: 'operating', // 'operating', 'repair', 'asset'
     description: '',
     amount: '',
+    recurring: 'no', // 'yes', 'no'
+    paidVia: 'cash', // 'cash', 'bank', 'credit'
     note: '',
   });
   const [error, setError] = useState('');
@@ -30,20 +33,24 @@ export default function Miscellaneous() {
   };
 
   const handleSubmit = () => {
-    const { date, category, description, amount } = form;
-    if (!date || !category || !description || !amount) {
+    const { date, category, expenseType, description, amount, paidVia } = form;
+    if (!date || !category || !expenseType || !description || !amount || !paidVia) {
       setError('Please fill in all required fields.');
       return;
     }
     setError('');
-    const newEntry = { ...form, amount: Number(amount) };
+    const newEntry = { 
+      ...form, 
+      amount: Number(amount),
+      cashFlowType: expenseType === 'asset' ? 'investing' : 'operating',
+    };
     if (form.id !== null) {
       setEntries(entries.map((e) => (e.id === form.id ? newEntry : e)));
     } else {
       newEntry.id = Date.now();
       setEntries([...entries, newEntry]);
     }
-    setForm({ id: null, date: '', category: '', description: '', amount: '', note: '' });
+    setForm({ id: null, date: '', category: '', expenseType: 'operating', description: '', amount: '', recurring: 'no', paidVia: 'cash', note: '' });
   };
 
   const handleEdit = (item) => setForm(item);
@@ -57,8 +64,22 @@ export default function Miscellaneous() {
       <div style={styles.form}>
         <input name="date" type="date" value={form.date} onChange={handleChange} placeholder="Date" />
         <input name="category" value={form.category} onChange={handleChange} placeholder="Category (e.g. Repairs)" />
+        <select name="expenseType" value={form.expenseType} onChange={handleChange}>
+          <option value="operating">Operating Expense</option>
+          <option value="repair">Repair/Maintenance</option>
+          <option value="asset">Asset Purchase</option>
+        </select>
         <input name="description" value={form.description} onChange={handleChange} placeholder="Description" />
         <input name="amount" type="number" value={form.amount} onChange={handleChange} placeholder="Amount (USD)" />
+        <select name="recurring" value={form.recurring} onChange={handleChange}>
+          <option value="no">One-time</option>
+          <option value="yes">Recurring</option>
+        </select>
+        <select name="paidVia" value={form.paidVia} onChange={handleChange}>
+          <option value="cash">Cash</option>
+          <option value="bank">Bank</option>
+          <option value="credit">Credit</option>
+        </select>
         <input name="note" value={form.note} onChange={handleChange} placeholder="Note (optional)" />
         <button onClick={handleSubmit}>{form.id ? 'Update' : 'Add'} Entry</button>
       </div>
@@ -68,8 +89,11 @@ export default function Miscellaneous() {
           <tr>
             <th style={styles.th}>Date</th>
             <th style={styles.th}>Category</th>
+            <th style={styles.th}>Type</th>
             <th style={styles.th}>Description</th>
             <th style={styles.th}>Amount</th>
+            <th style={styles.th}>Recurring</th>
+            <th style={styles.th}>Paid Via</th>
             <th style={styles.th}>Note</th>
             <th style={styles.th}>Actions</th>
           </tr>
@@ -79,8 +103,11 @@ export default function Miscellaneous() {
             <tr key={e.id}>
               <td style={styles.td}>{e.date}</td>
               <td style={styles.td}>{e.category}</td>
+              <td style={styles.td}>{e.expenseType}</td>
               <td style={styles.td}>{e.description}</td>
               <td style={styles.td}>${e.amount.toFixed(2)}</td>
+              <td style={styles.td}>{e.recurring === 'yes' ? '🔄' : '📅'}</td>
+              <td style={styles.td}>{e.paidVia}</td>
               <td style={styles.td}>{e.note}</td>
               <td style={styles.td}>
                 <button style={styles.actionButton} onClick={() => handleEdit(e)}>✏️</button>
@@ -102,7 +129,7 @@ const styles = {
   },
   form: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(6, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
     gap: 10,
     marginBottom: 20,
   },
