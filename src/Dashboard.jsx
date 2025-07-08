@@ -14,6 +14,12 @@ export default function Dashboard() {
         <button style={styles.button} onClick={() => navigate('/income-statement')}>
           📈 Income Statement
         </button>
+        <button style={styles.button} onClick={() => navigate('/balance-sheet')}>
+          ⚖️ Balance Sheet
+        </button>
+        <button style={styles.button} onClick={() => navigate('/cashflow')}>
+          📊 Cash Flow Statement
+        </button>
         <button style={styles.button} onClick={() => navigate('/sales')}>
           💰 Sales
         </button>
