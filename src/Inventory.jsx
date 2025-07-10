@@ -1,6 +1,7 @@
 // src/Inventory.jsx
 import React, { useState, useEffect } from 'react';
 import localforage from 'localforage';
+import { generateReferenceNumber } from './utils/helpers.js';
 
 export default function Inventory() {
   const [inventory, setInventory] = useState([]);
@@ -9,37 +10,45 @@ export default function Inventory() {
     id: null,
     date: '',
     referenceNumber: '',
-    type: 'raw-material', // 'raw-material', 'finished-product'
+    type: 'raw-material',
     name: '',
     quantityIn: '',
     quantityOut: '',
-    unit: 'bags', // 'bags', 'pallets', 'bricks', 'tons'
-    sourceUse: '', // Cost Entry ID / Sales Entry ID
+    unit: 'bags',
+    sourceUse: '',
     remarks: '',
   });
   const [error, setError] = useState('');
 
   useEffect(() => {
-    Promise.all([
-      localforage.getItem('inventory') || [],
-      localforage.getItem('inventoryMovements') || [],
-    ]).then(([inv, mov]) => {
-      setInventory(inv);
-      setMovements(mov);
-    });
+    const loadData = async () => {
+      try {
+        const [inv, mov] = await Promise.all([
+          localforage.getItem('inventory'),
+          localforage.getItem('inventoryMovements'),
+        ]);
+        setInventory(inv || []);
+        setMovements(mov || []);
+      } catch (error) {
+        console.error('Error loading inventory data:', error);
+        setInventory([]);
+        setMovements([]);
+      }
+    };
+    loadData();
   }, []);
 
   useEffect(() => {
-    localforage.setItem('inventory', inventory);
+    if (inventory.length > 0) {
+      localforage.setItem('inventory', inventory);
+    }
   }, [inventory]);
 
   useEffect(() => {
-    localforage.setItem('inventoryMovements', movements);
+    if (movements.length > 0) {
+      localforage.setItem('inventoryMovements', movements);
+    }
   }, [movements]);
-
-  const generateReferenceNumber = () => {
-    return `TX-INV-${Date.now()}`;
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -47,14 +56,14 @@ export default function Inventory() {
   };
 
   const handleSubmit = () => {
-    const { date, type, name, quantityIn, quantityOut, unit, sourceUse } = form;
+    const { date, type, name, quantityIn, quantityOut, unit } = form;
     if (!date || !type || !name || (!quantityIn && !quantityOut) || !unit) {
       setError('Please fill in all required fields.');
       return;
     }
     setError('');
 
-    const refNumber = form.referenceNumber || generateReferenceNumber();
+    const refNumber = form.referenceNumber || generateReferenceNumber('inventory');
     const newMovement = {
       ...form,
       id: form.id || Date.now(),
@@ -71,7 +80,6 @@ export default function Inventory() {
       setMovements([...movements, newMovement]);
     }
 
-    // Update inventory levels
     updateInventoryLevels(name, type, unit, newMovement.netChange);
 
     setForm({
@@ -104,8 +112,9 @@ export default function Inventory() {
         type: itemType,
         unit: unit,
         currentStock: netChange,
-        minimumLevel: 0,
-        maximumLevel: 1000,
+        minimumLevel: 10,
+        unitCost: 0,
+        reorderLevel: 20,
         lastUpdated: new Date().toISOString(),
       };
       setInventory([...inventory, newItem]);
@@ -115,27 +124,24 @@ export default function Inventory() {
   const handleEdit = (item) => setForm(item);
   const handleDelete = (id) => setMovements(movements.filter((m) => m.id !== id));
 
-  const getStockLevel = (itemName, itemType) => {
-    const item = inventory.find(i => i.name === itemName && i.type === itemType);
-    return item ? item.currentStock : 0;
-  };
-
   const getStockStatus = (currentStock, minimumLevel) => {
-    if (currentStock <= minimumLevel) return 'low';
-    if (currentStock <= minimumLevel * 1.5) return 'warning';
+    const stock = currentStock || 0;
+    const minLevel = minimumLevel || 0;
+    
+    if (stock <= minLevel) return 'low';
+    if (stock <= minLevel * 1.5) return 'warning';
     return 'good';
   };
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.title}>🧱 Inventory Tracking</h2>
+      <h2 style={styles.title}>📦 Inventory Tracking</h2>
       
-      {error && <p style={styles.error}>{error}</p>}
-
-      {/* Movement Entry Form */}
       <div style={styles.section}>
-        <h3 style={styles.sectionTitle}>📦 Add Stock Movement</h3>
-        <div style={styles.form}>
+        <h3 style={styles.sectionTitle}>➕ Add Inventory Movement</h3>
+        {error && <p style={styles.error}>{error}</p>}
+        
+        <div style={styles.formGrid}>
           <input
             name="date"
             type="date"
@@ -158,7 +164,7 @@ export default function Inventory() {
             name="name"
             value={form.name}
             onChange={handleChange}
-            placeholder="Item Name (e.g. Cement, 6-hole Brick)"
+            placeholder="Item Name"
             style={styles.input}
           />
           <input
@@ -195,7 +201,7 @@ export default function Inventory() {
             name="remarks"
             value={form.remarks}
             onChange={handleChange}
-            placeholder="Remarks (optional)"
+            placeholder="Remarks"
             style={styles.input}
           />
           <button onClick={handleSubmit} style={styles.submitButton}>
@@ -204,29 +210,31 @@ export default function Inventory() {
         </div>
       </div>
 
-      {/* Current Stock Levels */}
       <div style={styles.section}>
-        <h3 style={styles.sectionTitle}>📊 Current Stock Levels</h3>
+        <h3 style={styles.sectionTitle}>📦 Current Stock Levels</h3>
         <div style={styles.stockGrid}>
-          {inventory.map((item) => {
+          {inventory.length > 0 ? inventory.map((item, index) => {
             const status = getStockStatus(item.currentStock, item.minimumLevel);
             return (
-              <div key={item.id} style={{...styles.stockCard, ...styles[status]}}>
-                <h4>{item.name}</h4>
+              <div key={item.id || index} style={{...styles.stockCard, ...styles[status]}}>
+                <h4>{item.name || 'Unknown Item'}</h4>
                 <p style={styles.stockLevel}>
-                  <strong>{item.currentStock} {item.unit}</strong>
+                  <strong>{item.currentStock || 0} {item.unit || 'units'}</strong>
                 </p>
-                <p style={styles.stockType}>{item.type.replace('-', ' ')}</p>
+                <p style={styles.stockType}>{(item.type || '').replace('-', ' ')}</p>
                 <p style={styles.lastUpdated}>
-                  Updated: {new Date(item.lastUpdated).toLocaleDateString()}
+                  Updated: {item.lastUpdated ? new Date(item.lastUpdated).toLocaleDateString() : 'Never'}
                 </p>
               </div>
             );
-          })}
+          }) : (
+            <div style={styles.emptyState}>
+              <p>No inventory items yet. Add some items using the form above!</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Movement History */}
       <div style={styles.section}>
         <h3 style={styles.sectionTitle}>📋 Movement History</h3>
         <table style={styles.table}>
@@ -236,9 +244,9 @@ export default function Inventory() {
               <th style={styles.th}>Reference</th>
               <th style={styles.th}>Type</th>
               <th style={styles.th}>Item</th>
-              <th style={styles.th}>In</th>
-              <th style={styles.th}>Out</th>
-              <th style={styles.th}>Net</th>
+              <th style={styles.th}>Qty In</th>
+              <th style={styles.th}>Qty Out</th>
+              <th style={styles.th}>Net Change</th>
               <th style={styles.th}>Unit</th>
               <th style={styles.th}>Source/Use</th>
               <th style={styles.th}>Remarks</th>
@@ -246,26 +254,32 @@ export default function Inventory() {
             </tr>
           </thead>
           <tbody>
-            {movements.map((m) => (
-              <tr key={m.id} style={styles.tr}>
-                <td style={styles.td}>{m.date}</td>
-                <td style={styles.td}>{m.referenceNumber}</td>
-                <td style={styles.td}>{m.type.replace('-', ' ')}</td>
-                <td style={styles.td}>{m.name}</td>
+            {movements.length > 0 ? movements.map((m, index) => (
+              <tr key={m.id || index} style={styles.tr}>
+                <td style={styles.td}>{m.date || ''}</td>
+                <td style={styles.td}>{m.referenceNumber || ''}</td>
+                <td style={styles.td}>{(m.type || '').replace('-', ' ')}</td>
+                <td style={styles.td}>{m.name || ''}</td>
                 <td style={styles.td}>{m.quantityIn || '-'}</td>
                 <td style={styles.td}>{m.quantityOut || '-'}</td>
-                <td style={{...styles.td, color: m.netChange >= 0 ? '#16a34a' : '#dc2626'}}>
-                  {m.netChange > 0 ? '+' : ''}{m.netChange}
+                <td style={{...styles.td, color: (m.netChange || 0) >= 0 ? '#16a34a' : '#dc2626'}}>
+                  {(m.netChange || 0) > 0 ? '+' : ''}{m.netChange || 0}
                 </td>
-                <td style={styles.td}>{m.unit}</td>
-                <td style={styles.td}>{m.sourceUse}</td>
-                <td style={styles.td}>{m.remarks}</td>
+                <td style={styles.td}>{m.unit || ''}</td>
+                <td style={styles.td}>{m.sourceUse || ''}</td>
+                <td style={styles.td}>{m.remarks || ''}</td>
                 <td style={styles.td}>
                   <button style={styles.actionButton} onClick={() => handleEdit(m)}>✏️</button>
                   <button style={styles.actionButton} onClick={() => handleDelete(m.id)}>🗑️</button>
                 </td>
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan="11" style={{...styles.td, textAlign: 'center', fontStyle: 'italic', color: '#6b7280'}}>
+                  No movements recorded yet
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -298,12 +312,13 @@ const styles = {
     color: '#374151',
     marginBottom: '15px',
     fontSize: '18px',
+    fontWeight: 'bold',
   },
-  form: {
+  formGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '10px',
-    marginBottom: '20px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: '15px',
+    alignItems: 'end',
   },
   input: {
     padding: '8px 12px',
@@ -319,10 +334,10 @@ const styles = {
     backgroundColor: 'white',
   },
   submitButton: {
-    padding: '10px 20px',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#1e40af',
     color: 'white',
     border: 'none',
+    padding: '10px 20px',
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '14px',
@@ -330,13 +345,13 @@ const styles = {
   },
   stockGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
     gap: '15px',
   },
   stockCard: {
     padding: '15px',
-    borderRadius: '6px',
-    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    border: '2px solid',
     textAlign: 'center',
   },
   stockLevel: {
@@ -345,24 +360,24 @@ const styles = {
   },
   stockType: {
     fontSize: '12px',
-    color: '#6b7280',
-    textTransform: 'capitalize',
+    textTransform: 'uppercase',
+    opacity: 0.7,
   },
   lastUpdated: {
     fontSize: '11px',
-    color: '#9ca3af',
+    opacity: 0.6,
   },
   good: {
-    backgroundColor: '#dcfce7',
-    borderColor: '#16a34a',
+    backgroundColor: '#f0fdf4',
+    borderColor: '#22c55e',
   },
   warning: {
-    backgroundColor: '#fef3c7',
-    borderColor: '#f59e0b',
+    backgroundColor: '#fefce8',
+    borderColor: '#eab308',
   },
   low: {
-    backgroundColor: '#fee2e2',
-    borderColor: '#dc2626',
+    backgroundColor: '#fef2f2',
+    borderColor: '#ef4444',
   },
   table: {
     width: '100%',
@@ -402,5 +417,11 @@ const styles = {
     padding: '10px',
     borderRadius: '4px',
     marginBottom: '20px',
+  },
+  emptyState: {
+    textAlign: 'center',
+    padding: '40px',
+    color: '#6b7280',
+    fontStyle: 'italic',
   },
 };

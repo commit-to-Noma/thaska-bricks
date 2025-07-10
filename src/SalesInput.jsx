@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import localforage from 'localforage';
-import EnhancedForm from './components/EnhancedForm.jsx';
 import { generateReferenceNumber, updateInventoryFromSale } from './utils/helpers.js';
 
 export default function SalesInput() {
@@ -9,12 +8,12 @@ export default function SalesInput() {
     id: null,
     date: '',
     referenceNumber: '',
-    description: '',
+    productSold: '', // Renamed from description
     quantity: '',
     unitPrice: '',
     paid: 'yes', // 'yes' or 'no' for accounts receivable
-    paidVia: 'cash', // 'cash', 'bank', 'credit'
-    note: '',
+    paidVia: 'cash', // 'cash', 'bank', 'ecocash'
+    customerDetails: '', // Renamed from note
   });
   const [error, setError] = useState('');
 
@@ -34,8 +33,8 @@ export default function SalesInput() {
   };
 
   const handleSubmit = async () => {
-    const { date, description, quantity, unitPrice, paid, paidVia } = form;
-    if (!date || !description || !quantity || !unitPrice || !paid || !paidVia) {
+    const { date, productSold, quantity, unitPrice, paid, paidVia } = form;
+    if (!date || !productSold || !quantity || !unitPrice) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -48,11 +47,16 @@ export default function SalesInput() {
       quantity: Number(quantity),
       unitPrice: Number(unitPrice),
       cashFlowType: 'operating',
+      description: form.productSold, // For compatibility with existing code
     };
     
     // Update inventory automatically if it's a product sale
-    if (form.description && form.quantity) {
-      await updateInventoryFromSale(newSale);
+    if (form.productSold && form.quantity) {
+      try {
+        await updateInventoryFromSale(newSale);
+      } catch (error) {
+        console.log('Inventory update error:', error);
+      }
     }
     
     if (form.id !== null) {
@@ -61,143 +65,171 @@ export default function SalesInput() {
       newSale.id = Date.now();
       setSales([...sales, newSale]);
     }
+    
+    // Reset form
     setForm({ 
       id: null, 
       date: '', 
       referenceNumber: '', 
-      description: '', 
+      productSold: '', 
       quantity: '', 
       unitPrice: '', 
       paid: 'yes', 
       paidVia: 'cash', 
-      note: '' 
+      customerDetails: '' 
     });
   };
 
   const handleEdit = (sale) => setForm(sale);
-  const handleDelete = (id) => setSales(sales.filter((s) => s.id !== id));
+  const handleDelete = (id) => {
+    const saleToDelete = sales.find(s => s.id === id);
+    const confirmMessage = `Are you sure you want to delete this sale?\n\nProduct: ${saleToDelete?.productSold || saleToDelete?.description || 'Unknown'}\nAmount: $${saleToDelete?.amount || 0}\nDate: ${saleToDelete?.date || 'Unknown'}\n\nThis action cannot be undone.`;
+    
+    if (window.confirm(confirmMessage)) {
+      setSales(sales.filter((s) => s.id !== id));
+    }
+  };
 
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>💰 Sales Input</h2>
       
-      <EnhancedForm
-        formType="sales"
-        form={form}
-        setForm={setForm}
-        onSubmit={handleSubmit}
-      >
-        <div style={styles.formGrid}>
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>📅 Transaction Details</h3>
-            <input 
-              name="date" 
-              type="date" 
-              value={form.date} 
-              onChange={handleChange} 
-              style={styles.input}
-            />
-            <input 
-              name="referenceNumber" 
-              value={form.referenceNumber} 
-              onChange={handleChange} 
-              placeholder="Reference (auto-generated)"
-              style={styles.input}
-            />
-            <input 
-              name="description" 
-              value={form.description} 
-              onChange={handleChange} 
-              placeholder="Product/Service Description"
-              style={styles.input}
-            />
-          </div>
-          
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>💰 Pricing</h3>
-            <input 
-              name="quantity" 
-              type="number" 
-              value={form.quantity} 
-              onChange={handleChange} 
-              placeholder="Quantity"
-              style={styles.input}
-            />
-            <input 
-              name="unitPrice" 
-              type="number" 
-              value={form.unitPrice} 
-              onChange={handleChange} 
-              placeholder="Unit Price"
-              style={styles.input}
-            />
-            <div style={styles.calculatedTotal}>
-              Total: ${((form.quantity || 0) * (form.unitPrice || 0)).toFixed(2)}
+      <div style={styles.formGrid}>
+        <div style={styles.section}>
+          <h3 style={styles.sectionTitle}>📅 Transaction Details</h3>
+          <input 
+            name="date" 
+            type="date" 
+            value={form.date} 
+            onChange={handleChange} 
+            style={styles.input}
+            required
+          />
+          {form.referenceNumber && (
+            <div style={styles.referenceDisplay}>
+              <strong>Reference: {form.referenceNumber}</strong>
             </div>
-          </div>
-          
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>💳 Payment</h3>
-            <select name="paid" value={form.paid} onChange={handleChange} style={styles.select}>
-              <option value="yes">✅ Paid</option>
-              <option value="no">⏳ Unpaid (A/R)</option>
-            </select>
-            <select name="paidVia" value={form.paidVia} onChange={handleChange} style={styles.select}>
-              <option value="cash">💵 Cash</option>
-              <option value="bank">🏦 Bank</option>
-              <option value="credit">💳 Credit</option>
-            </select>
-            <input 
-              name="note" 
-              value={form.note} 
-              onChange={handleChange} 
-              placeholder="Additional Notes"
-              style={styles.input}
-            />
+          )}
+          <input 
+            name="productSold" 
+            value={form.productSold} 
+            onChange={handleChange} 
+            placeholder="Product Sold"
+            style={styles.input}
+            required
+          />
+        </div>
+        
+        <div style={styles.section}>
+          <h3 style={styles.sectionTitle}>💰 Pricing</h3>
+          <input 
+            name="quantity" 
+            type="number" 
+            value={form.quantity} 
+            onChange={handleChange} 
+            placeholder="Quantity"
+            style={styles.input}
+            required
+          />
+          <input 
+            name="unitPrice" 
+            type="number" 
+            step="0.01"
+            value={form.unitPrice} 
+            onChange={handleChange} 
+            placeholder="Unit Price"
+            style={styles.input}
+            required
+          />
+          <div style={styles.calculatedTotal}>
+            Total: ${((form.quantity || 0) * (form.unitPrice || 0)).toFixed(2)}
           </div>
         </div>
-      </EnhancedForm>
+        
+        <div style={styles.section}>
+          <h3 style={styles.sectionTitle}>💳 Payment</h3>
+          <select name="paid" value={form.paid} onChange={handleChange} style={styles.select}>
+            <option value="yes">✅ Paid</option>
+            <option value="no">⏳ Unpaid (A/R)</option>
+          </select>
+          <select name="paidVia" value={form.paidVia} onChange={handleChange} style={styles.select}>
+            <option value="cash">💵 Cash</option>
+            <option value="bank">🏦 Bank Transfer</option>
+            <option value="ecocash">📱 EcoCash</option>
+          </select>
+          <input 
+            name="customerDetails" 
+            value={form.customerDetails} 
+            onChange={handleChange} 
+            placeholder="Customer Details"
+            style={styles.input}
+          />
+        </div>
+      </div>
+
+      <div style={styles.submitSection}>
+        <button onClick={handleSubmit} style={styles.submitButton}>
+          {form.id !== null ? '✏️ Update Sale' : '➕ Add Sale'}
+        </button>
+      </div>
 
       {error && <p style={styles.error}>{error}</p>}
 
       <div style={styles.tableSection}>
-        <h3 style={styles.sectionTitle}>📊 Sales History</h3>
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>Date</th>
-              <th style={styles.th}>Reference</th>
-              <th style={styles.th}>Description</th>
-              <th style={styles.th}>Qty</th>
-              <th style={styles.th}>Unit Price</th>
-              <th style={styles.th}>Total</th>
-              <th style={styles.th}>Paid</th>
-              <th style={styles.th}>Via</th>
-              <th style={styles.th}>Note</th>
-              <th style={styles.th}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sales.map((s) => (
-              <tr key={s.id} style={styles.tr}>
-                <td style={styles.td}>{s.date}</td>
-                <td style={styles.td}>{s.referenceNumber}</td>
-                <td style={styles.td}>{s.description}</td>
-                <td style={styles.td}>{s.quantity}</td>
-                <td style={styles.td}>${Number(s.unitPrice).toFixed(2)}</td>
-                <td style={styles.td}>${Number(s.amount).toFixed(2)}</td>
-                <td style={styles.td}>{s.paid === 'yes' ? '✅' : '⏳'}</td>
-                <td style={styles.td}>{s.paidVia}</td>
-                <td style={styles.td}>{s.note}</td>
-                <td style={styles.td}>
-                  <button style={styles.actionButton} onClick={() => handleEdit(s)}>✏️</button>
-                  <button style={styles.actionButton} onClick={() => handleDelete(s.id)}>🗑️</button>
-                  <button style={styles.actionButton} title="Export PDF">📄</button>
-                </td>
+        <h3 style={styles.sectionTitle}>📊 Sales History ({sales.length} transactions)</h3>
+        <div style={styles.tableContainer}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Date</th>
+                <th style={styles.th}>Reference</th>
+                <th style={styles.th}>Product</th>
+                <th style={styles.th}>Qty</th>
+                <th style={styles.th}>Unit Price</th>
+                <th style={styles.th}>Total</th>
+                <th style={styles.th}>Status</th>
+                <th style={styles.th}>Payment</th>
+                <th style={styles.th}>Customer</th>
+                <th style={styles.th}>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sales.length === 0 ? (
+                <tr>
+                  <td colSpan="10" style={styles.noDataCell}>
+                    No sales recorded yet. Add your first sale above!
+                  </td>
+                </tr>
+              ) : (
+                sales.map((sale) => (
+                  <tr key={sale.id} style={styles.tr}>
+                    <td style={styles.td}>{sale.date}</td>
+                    <td style={styles.td}>{sale.referenceNumber}</td>
+                    <td style={styles.td}>{sale.productSold || sale.description}</td>
+                    <td style={styles.td}>{sale.quantity}</td>
+                    <td style={styles.td}>${Number(sale.unitPrice || 0).toFixed(2)}</td>
+                    <td style={styles.td}>${Number(sale.amount || 0).toFixed(2)}</td>
+                    <td style={styles.td}>
+                      <span style={sale.paid === 'yes' ? styles.paidStatus : styles.unpaidStatus}>
+                        {sale.paid === 'yes' ? '✅ Paid' : '⏳ Pending'}
+                      </span>
+                    </td>
+                    <td style={styles.td}>{sale.paidVia}</td>
+                    <td style={styles.td}>{sale.customerDetails || sale.note || 'N/A'}</td>
+                    <td style={styles.td}>
+                      <button style={styles.editButton} onClick={() => handleEdit(sale)} title="Edit this sale">
+                        ✏️ Edit
+                      </button>
+                      <button style={styles.deleteButton} onClick={() => handleDelete(sale.id)} title="Delete this sale (cannot be undone)">
+                        🗑️ Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -205,8 +237,8 @@ export default function SalesInput() {
 
 const styles = {
   container: {
-    maxWidth: 1200,
-    margin: '30px auto',
+    maxWidth: '1200px',
+    margin: '0 auto',
     fontFamily: 'Arial, sans-serif',
     padding: '20px',
   },
@@ -216,11 +248,13 @@ const styles = {
     marginBottom: '30px',
     borderBottom: '2px solid #2563eb',
     paddingBottom: '10px',
+    fontSize: '24px',
   },
   formGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
     gap: '20px',
+    marginBottom: '20px',
   },
   section: {
     backgroundColor: '#f8fafc',
@@ -236,41 +270,78 @@ const styles = {
   },
   input: {
     width: '100%',
-    padding: '8px 12px',
+    padding: '10px 12px',
     border: '1px solid #d1d5db',
     borderRadius: '4px',
     fontSize: '14px',
     marginBottom: '10px',
+    boxSizing: 'border-box',
   },
   select: {
     width: '100%',
-    padding: '8px 12px',
+    padding: '10px 12px',
     border: '1px solid #d1d5db',
     borderRadius: '4px',
     fontSize: '14px',
     backgroundColor: 'white',
     marginBottom: '10px',
+    boxSizing: 'border-box',
   },
   calculatedTotal: {
-    padding: '10px',
+    padding: '12px',
     backgroundColor: '#dbeafe',
-    borderRadius: '4px',
+    borderRadius: '6px',
     textAlign: 'center',
     fontWeight: 'bold',
     fontSize: '16px',
     color: '#1e40af',
+    border: '2px solid #3b82f6',
+  },
+  referenceDisplay: {
+    padding: '10px',
+    backgroundColor: '#f0f9ff',
+    borderRadius: '4px',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: '14px',
+    color: '#0369a1',
+    border: '1px solid #0284c7',
+    marginBottom: '10px',
+  },
+
+  submitSection: {
+    textAlign: 'center',
+    margin: '30px 0',
+  },
+  submitButton: {
+    padding: '12px 30px',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    backgroundColor: '#2563eb',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    transition: 'all 0.2s ease',
+    minWidth: '150px',
   },
   tableSection: {
     backgroundColor: '#f8fafc',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     padding: '20px',
-    marginTop: '20px',
+    marginTop: '30px',
+  },
+  tableContainer: {
+    overflowX: 'auto',
+    maxWidth: '100%',
   },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
     border: '1px solid #e5e7eb',
+    backgroundColor: 'white',
   },
   th: {
     backgroundColor: '#f3f4f6',
@@ -279,31 +350,61 @@ const styles = {
     borderBottom: '2px solid #e5e7eb',
     fontWeight: 'bold',
     fontSize: '14px',
+    whiteSpace: 'nowrap',
   },
   td: {
     padding: '10px 8px',
     borderBottom: '1px solid #e5e7eb',
     fontSize: '14px',
+    verticalAlign: 'top',
   },
   tr: {
-    ':hover': {
-      backgroundColor: '#f9fafb',
-    },
+    transition: 'background-color 0.2s ease',
   },
-  actionButton: {
-    marginRight: '5px',
-    padding: '4px 8px',
+  paidStatus: {
+    color: '#16a34a',
+    fontWeight: 'bold',
+  },
+  unpaidStatus: {
+    color: '#dc2626',
+    fontWeight: 'bold',
+  },
+  editButton: {
+    marginRight: '8px',
+    padding: '8px 12px',
     border: 'none',
-    borderRadius: '3px',
+    borderRadius: '4px',
     cursor: 'pointer',
-    fontSize: '14px',
-    backgroundColor: '#f3f4f6',
+    fontSize: '13px',
+    backgroundColor: '#3b82f6',
+    color: 'white',
+    transition: 'background-color 0.2s ease',
+    fontWeight: '500',
+  },
+  deleteButton: {
+    padding: '8px 12px',
+    border: '1px solid #dc2626',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    backgroundColor: 'white',
+    color: '#dc2626',
+    transition: 'all 0.2s ease',
+    fontWeight: '500',
+  },
+  noDataCell: {
+    textAlign: 'center',
+    padding: '40px',
+    color: '#6b7280',
+    fontSize: '16px',
+    fontStyle: 'italic',
   },
   error: {
     color: '#dc2626',
     backgroundColor: '#fee2e2',
-    padding: '10px',
-    borderRadius: '4px',
+    padding: '12px',
+    borderRadius: '6px',
     marginBottom: '20px',
+    border: '1px solid #fca5a5',
   },
 };

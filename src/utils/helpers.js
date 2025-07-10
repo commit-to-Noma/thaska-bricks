@@ -252,7 +252,51 @@ export function checkForOverdueReceivables(sales) {
   return overdue;
 }
 
-export function validateDoubleEntry(transactions) {
+export function validateFormData(formData, formType) {
+  const issues = [];
+  
+  // Basic validation for required fields
+  if (!formData.referenceNumber) {
+    issues.push('Missing reference number');
+  }
+  
+  if (!formData.date) {
+    issues.push('Missing transaction date');
+  }
+  
+  if (!formData.amount || formData.amount <= 0) {
+    issues.push('Invalid amount');
+  }
+  
+  // Form-specific validations
+  switch (formType) {
+    case 'costs':
+      if (!formData.description) issues.push('Missing cost description');
+      if (!formData.vendor) issues.push('Missing vendor information');
+      break;
+    case 'sales':
+      if (!formData.customerName) issues.push('Missing customer name');
+      if (!formData.description) issues.push('Missing sale description');
+      break;
+    case 'payroll':
+      if (!formData.employeeName) issues.push('Missing employee name');
+      if (!formData.position) issues.push('Missing position');
+      break;
+    case 'capital':
+      if (!formData.type) issues.push('Missing capital type');
+      if (!formData.category) issues.push('Missing category');
+      break;
+    case 'miscellaneous':
+      if (!formData.description) issues.push('Missing description');
+      if (!formData.expenseType) issues.push('Missing expense type');
+      break;
+  }
+  
+  return issues;
+}
+
+// Alternative function for transaction array validation
+export function validateTransactionDoubleEntry(transactions) {
   const issues = [];
   
   // Check for missing reference numbers
