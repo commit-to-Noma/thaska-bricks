@@ -194,6 +194,45 @@ export default function CapitalInput() {
           {form.id !== null ? '✏️ Update Entry' : '➕ Add Capital Entry'}
         </button>
       </div>
+            <h3 style={styles.sectionTitle}>🏷️ Classification</h3>
+            <select name="type" value={form.type} onChange={handleChange} style={styles.select}>
+              <option value="">Select Type</option>
+              <option value="Equipment">🏗️ Equipment Purchase</option>
+              <option value="Investment">💰 Owner Investment</option>
+              <option value="Loan">🏦 Loan Received</option>
+              <option value="Repayment">💳 Loan Repayment</option>
+            </select>
+            <select name="category" value={form.category} onChange={handleChange} style={styles.select}>
+              <option value="">Select Category</option>
+              <option value="Investment">💼 Investment</option>
+              <option value="Financing">🏦 Financing</option>
+            </select>
+            <div style={styles.infoBox}>
+              <small>
+                {form.type === 'Equipment' || form.type === 'Investment'
+                  ? '💡 This will be recorded as an investing activity' 
+                  : '💡 This will be recorded as a financing activity'}
+              </small>
+            </div>
+          </div>
+          
+          <div style={styles.section}>
+            <h3 style={styles.sectionTitle}>💳 Payment Details</h3>
+            <select name="paidVia" value={form.paidVia} onChange={handleChange} style={styles.select}>
+              <option value="">Paid Via</option>
+              <option value="cash">💵 Cash</option>
+              <option value="bank">🏦 Bank Transfer</option>
+              <option value="loan">🏦 Loan Proceeds</option>
+            </select>
+            <input 
+              name="note" 
+              value={form.note} 
+              onChange={handleChange} 
+              placeholder="Additional Notes"
+              style={styles.input}
+            />
+          </div>
+      </div>
 
       {error && <p style={styles.error}>{error}</p>}
 
@@ -263,14 +302,10 @@ export default function CapitalInput() {
           </table>
         </div>
       </div>
-    </div>
-  );
-}
-
 const styles = {
   container: {
-    maxWidth: '1200px',
-    margin: '0 auto',
+    maxWidth: 1200,
+    margin: '30px auto',
     fontFamily: 'Arial, sans-serif',
     padding: '20px',
   },
@@ -280,13 +315,11 @@ const styles = {
     marginBottom: '30px',
     borderBottom: '2px solid #2563eb',
     paddingBottom: '10px',
-    fontSize: '24px',
   },
   formGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
     gap: '20px',
-    marginBottom: '20px',
   },
   section: {
     backgroundColor: '#f8fafc',
@@ -302,22 +335,87 @@ const styles = {
   },
   input: {
     width: '100%',
-    padding: '10px 12px',
+    padding: '8px 12px',
     border: '1px solid #d1d5db',
     borderRadius: '4px',
     fontSize: '14px',
     marginBottom: '10px',
-    boxSizing: 'border-box',
   },
   select: {
     width: '100%',
-    padding: '10px 12px',
+    padding: '8px 12px',
     border: '1px solid #d1d5db',
     borderRadius: '4px',
     fontSize: '14px',
     backgroundColor: 'white',
     marginBottom: '10px',
-    boxSizing: 'border-box',
+  },
+  infoBox: {
+    backgroundColor: '#dbeafe',
+    padding: '10px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    color: '#1e40af',
+  },
+  summaryCards: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '20px',
+    margin: '20px 0',
+  },
+  card: {
+    backgroundColor: '#1e40af',
+    color: 'white',
+    padding: '20px',
+    borderRadius: '8px',
+    textAlign: 'center',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  },
+  tableSection: {
+    backgroundColor: '#f8fafc',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    padding: '20px',
+    marginTop: '20px',
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    border: '1px solid #e5e7eb',
+  },
+  th: {
+    backgroundColor: '#f3f4f6',
+    padding: '12px 8px',
+    textAlign: 'left',
+    borderBottom: '2px solid #e5e7eb',
+    fontWeight: 'bold',
+    fontSize: '14px',
+  },
+  td: {
+    padding: '10px 8px',
+    borderBottom: '1px solid #e5e7eb',
+    fontSize: '14px',
+  },
+  tr: {
+    ':hover': {
+      backgroundColor: '#f9fafb',
+    },
+  },
+  actionButton: {
+    marginRight: '5px',
+    padding: '4px 8px',
+    border: 'none',
+    borderRadius: '3px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    backgroundColor: '#f3f4f6',
+  },
+  error: {
+    color: '#dc2626',
+    backgroundColor: '#fee2e2',
+    padding: '10px',
+    borderRadius: '4px',
+    marginBottom: '20px',
   },
   referenceDisplay: {
     padding: '10px',
@@ -347,61 +445,9 @@ const styles = {
     transition: 'all 0.2s ease',
     minWidth: '150px',
   },
-  infoBox: {
-    backgroundColor: '#dbeafe',
-    padding: '10px',
-    borderRadius: '4px',
-    fontSize: '12px',
-    color: '#1e40af',
-  },
-  summaryCards: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '20px',
-    margin: '20px 0',
-  },
-  card: {
-    backgroundColor: '#1e40af',
-    color: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    textAlign: 'center',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  },
-  tableSection: {
-    backgroundColor: '#f8fafc',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    padding: '20px',
-    marginTop: '30px',
-  },
   tableContainer: {
     overflowX: 'auto',
     maxWidth: '100%',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    border: '1px solid #e5e7eb',
-    backgroundColor: 'white',
-  },
-  th: {
-    backgroundColor: '#f3f4f6',
-    padding: '12px 8px',
-    textAlign: 'left',
-    borderBottom: '2px solid #e5e7eb',
-    fontWeight: 'bold',
-    fontSize: '14px',
-    whiteSpace: 'nowrap',
-  },
-  td: {
-    padding: '10px 8px',
-    borderBottom: '1px solid #e5e7eb',
-    fontSize: '14px',
-    verticalAlign: 'top',
-  },
-  tr: {
-    transition: 'background-color 0.2s ease',
   },
   editButton: {
     marginRight: '8px',
@@ -433,13 +479,5 @@ const styles = {
     color: '#6b7280',
     fontSize: '16px',
     fontStyle: 'italic',
-  },
-  error: {
-    color: '#dc2626',
-    backgroundColor: '#fee2e2',
-    padding: '12px',
-    borderRadius: '6px',
-    marginBottom: '20px',
-    border: '1px solid #fca5a5',
   },
 };
