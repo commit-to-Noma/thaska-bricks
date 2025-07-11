@@ -29,6 +29,28 @@ function Sidebar() {
     { id: 'balance-sheet', label: 'Balance Sheet', icon: '⚖️', path: '/balance-sheet' },
     { id: 'cashflow', label: 'Cash Flow', icon: '📊', path: '/cashflow' },
   ];
+import BalanceSheet from './BalanceSheet.jsx';
+import CashFlowStatement from './CashFlowStatement';
+import CapitalInput from './CapitalInput.jsx';
+import Inventory from './Inventory.jsx';
+import TransactionSummary from './TransactionSummary.jsx';
+import SplashScreen from './SplashScreen.jsx';
+
+function Sidebar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const tabs = [
+    { id: 'sales', label: 'Sales', icon: '💰', path: '/sales' },
+    { id: 'payroll', label: 'Payroll', icon: '�', path: '/payroll' },
+    { id: 'costs', label: 'Costs', icon: '🧱', path: '/costs' },
+    { id: 'capital', label: 'Capital & Equipment', icon: '🏭', path: '/capital' },
+    { id: 'miscellaneous', label: 'Miscellaneous', icon: '📋', path: '/miscellaneous' },
+    { id: 'inventory', label: 'Inventory', icon: '📦', path: '/inventory' },
+    { id: 'income-statement', label: 'Income Statement', icon: '📈', path: '/income-statement' },
+    { id: 'balance-sheet', label: 'Balance Sheet', icon: '⚖️', path: '/balance-sheet' },
+    { id: 'cashflow', label: 'Cash Flow', icon: '📊', path: '/cashflow' },
+  ];
 
   return (
     <div style={styles.sidebar}>
