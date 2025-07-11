@@ -234,8 +234,8 @@ export default function CostsInput() {
 
 const styles = {
   container: {
-    maxWidth: 1200,
-    margin: '30px auto',
+    maxWidth: '1200px',
+    margin: '0 auto',
     fontFamily: 'Arial, sans-serif',
     padding: '20px',
   },
@@ -248,14 +248,16 @@ const styles = {
   },
   formGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
     gap: '20px',
+    marginBottom: '20px',
   },
   section: {
     backgroundColor: '#f8fafc',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     padding: '20px',
+    minHeight: '200px',
   },
   sectionTitle: {
     color: '#374151',
@@ -270,6 +272,7 @@ const styles = {
     borderRadius: '4px',
     fontSize: '14px',
     marginBottom: '10px',
+    boxSizing: 'border-box',
   },
   select: {
     width: '100%',
@@ -279,6 +282,7 @@ const styles = {
     fontSize: '14px',
     backgroundColor: 'white',
     marginBottom: '10px',
+    boxSizing: 'border-box',
   },
   infoBox: {
     backgroundColor: '#dbeafe',
